@@ -1,32 +1,27 @@
-import openai
 import asyncio
+import torch
+from transformers import CLIPProcessor, CLIPModel
+from PIL import Image
 
-openai.api_key = "YOUR_OPENAI_API_KEY"
+# Load CLIP model once at startup
+model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-
-async def generate_embedding(image):
+async def generate_embedding(image: Image.Image):
     """
-    Generate embedding from image using OpenAI CLIP model
+    Generate embedding from image using Hugging Face CLIP
     """
-
-    import base64
-    import io
-
-    # Convert PIL image to bytes
-    buf = io.BytesIO()
-    image.save(buf, format="PNG")
-    img_bytes = buf.getvalue()
-
-    # OpenAI API call is sync, wrap in executor
-    import concurrent.futures
 
     loop = asyncio.get_event_loop()
 
-    def get_embedding():
-        response = openai.Embedding.create(
-            input=img_bytes, model="clip-vit-base-patch32"
-        )
-        return response["data"][0]["embedding"]
+    def _embed():
+        inputs = processor(images=image, return_tensors="pt")
+        with torch.no_grad():
+            outputs = model.get_image_features(**inputs)
+        # Normalize to unit vector (good for vector search)
+        embedding = outputs[0] / outputs[0].norm(p=2)
+        return embedding.cpu().numpy().tolist()
 
-    embedding = await loop.run_in_executor(None, get_embedding)
+    # Run embedding computation in executor (non-blocking)
+    embedding = await loop.run_in_executor(None, _embed)
     return embedding

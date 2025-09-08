@@ -1,23 +1,35 @@
-from fastapi import APIRouter, UploadFile, File
-from PIL import Image
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from PIL import Image, UnidentifiedImageError
 import io
 from app.services.embedding import generate_embedding
 from app.services.tidb import store_vector
 
 router = APIRouter()
 
-
 @router.post("/")
 async def upload_file(file: UploadFile = File(...)):
-    #  Reading image
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
+    try:
+        # Read and validate image
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail="Invalid image file")
 
     # Generate embedding
     vector = await generate_embedding(image)
 
-    # Storing embedding + metadata in TiDB
-    metadata = {"filename": file.filename}
+    # Metadata (you can extend this)
+    metadata = {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size_bytes": len(image_bytes),
+    }
+
+    # Store in TiDB
     await store_vector(vector, metadata)
 
-    return {"filename": file.filename, "vector_length": len(vector)}
+    return {
+        "status": "success",
+        "filename": file.filename,
+        "vector_length": len(vector),
+    }

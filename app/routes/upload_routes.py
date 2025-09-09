@@ -1,8 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from PIL import Image, UnidentifiedImageError
 import io
-from app.services.embedding import generate_embedding
-from app.services.tidb import store_vector
+from app.services.embedding_service import generate_embedding
+from app.utils.store_vector_utils import store_vector
 
 router = APIRouter()
 

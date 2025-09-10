@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, DateTime, LargeBinary, JSON
+from sqlalchemy import Column, BigInteger, Integer, String, DateTime, LargeBinary, JSON, ForeignKey
 from datetime import datetime
 from app.config.db import Base
 
@@ -9,8 +9,10 @@ from app.config.db import Base
 class EquipmentImage(Base):
     __tablename__ = "equipment_embeddings"  # Table name in DB
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)  # Unique ID
-    filename = Column(String(255), nullable=False)                 # Original file name
-    uploaded_at = Column(DateTime, default=datetime.utcnow)        # Timestamp of upload
-    vector = Column(LargeBinary, nullable=False)                   # Image embedding (serialized)
-    extra_metadata = Column("metadata", JSON)                      # Additional info (size, content type, equipment type)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    filename = Column(String(255), nullable=False) 
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    vector = Column(LargeBinary, nullable=False)       
+    extra_metadata = Column("metadata", JSON)
+
+    chat_session_id = Column(Integer, ForeignKey("chat_sessions.id"))

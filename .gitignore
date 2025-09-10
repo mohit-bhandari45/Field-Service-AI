@@ -1,2 +1,3 @@
 .env
-app/seed_images/assets
+app/seed/seed_images/assets
+app/seed/seed_manuals/assets

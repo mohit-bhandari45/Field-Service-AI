@@ -1,7 +1,7 @@
 import json
 import pickle
 from app.config.db import SessionLocal
-from app.models.equipment_model import EquipmentImage
+from app.models import EquipmentImage
 import asyncio
 
 async def store_vector(vector, metadata):

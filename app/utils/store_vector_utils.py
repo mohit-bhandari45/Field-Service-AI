@@ -1,4 +1,3 @@
-import json
 import pickle
 from app.config.db import SessionLocal
 from app.models import EquipmentImage

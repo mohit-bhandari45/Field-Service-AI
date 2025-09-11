@@ -7,7 +7,6 @@ from app.utils import auth_utils as security
 
 router = APIRouter()
 
-
 @router.post("/signup", response_model=TokenResponse)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     # Check if email already exists

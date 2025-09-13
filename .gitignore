@@ -1,3 +1,5 @@
 .env
 app/seed/seed_images/assets
 app/seed/seed_manuals/assets
+
+__pycache__/

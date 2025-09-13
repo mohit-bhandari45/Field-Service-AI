@@ -1,16 +1,12 @@
-import pickle
 from app.config.db import SessionLocal
 from app.models import EquipmentImage
 import asyncio
 
-async def store_vector(vector, metadata):
+async def store_vector(vector: list[float], metadata: dict) -> int:
     """
-    Store vector and metadata in TiDB using SQLAlchemy (vector stored as JSON)
+    Store vector and metadata in TiDB using SQLAlchemy.
+    Vectors are stored as TiDB VECTOR type.
     """
-    # Serialize vector with pickle
-    vector_blob = pickle.dumps(vector)
-
-    # Run DB operations in executor to avoid blocking event loop
     loop = asyncio.get_event_loop()
 
     def _db_task():
@@ -18,7 +14,7 @@ async def store_vector(vector, metadata):
         try:
             data_embedding = EquipmentImage(
                 filename=metadata["filename"],
-                vector=vector_blob,
+                vector=vector,  # list[float], matches VECTOR column
                 extra_metadata=metadata
             )
             db.add(data_embedding)
@@ -27,7 +23,7 @@ async def store_vector(vector, metadata):
             return data_embedding.id
         except Exception as e:
             db.rollback()
-            raise e
+            raise
         finally:
             db.close()
 

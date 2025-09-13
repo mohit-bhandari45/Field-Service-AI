@@ -1,29 +1,30 @@
-import numpy as np
-import pickle
+from sqlalchemy import text
 from sqlalchemy.orm import Session
-from app.models import EquipmentImage
 from app.config.db import SessionLocal
-
-
-def cosine_similarity(a, b):
-    """Compute cosine similarity between two vectors"""
-    a = np.array(a)
-    b = np.array(b)
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
+from app.models import EquipmentImage
 
 async def search_similar_images(query_vector, top_k=5):
     db: Session = SessionLocal()
     try:
+        # TiDB expects string format for vector
+        vec_str = "[" + ",".join(str(float(x)) for x in query_vector) + "]"
+
+        sql = text(f"""
+            SELECT id, filename, metadata, vector,
+                   VEC_COSINE_DISTANCE(vector, CAST(:vec AS VECTOR(512))) AS score
+            FROM equipment_embeddings
+            ORDER BY score ASC
+            LIMIT :k
+        """)
+
+        rows = db.execute(sql, {"vec": vec_str, "k": top_k}).fetchall()
+
+        # Return list of (EquipmentImage, score)
         results = []
-        images = db.query(EquipmentImage).all()
+        for row in rows:
+            img = db.query(EquipmentImage).get(row.id)
+            results.append((img, row.score))
 
-        for img in images:
-            stored_vector = pickle.loads(img.vector)
-            score = cosine_similarity(query_vector, stored_vector)
-            results.append((img, score))
-
-        results = sorted(results, key=lambda x: x[1], reverse=True)
-        return results[:top_k]
+        return results
     finally:
         db.close()

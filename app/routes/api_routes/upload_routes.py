@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from PIL import Image, UnidentifiedImageError
 import io
-from app.services import generate_embedding
+from app.services import generate_image_embedding
 from app.utils.store_vector_utils import store_vector
 
 router = APIRouter()
@@ -16,7 +16,7 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Invalid image file")
 
     # Generate embedding (ensure it's a list[float])
-    vector = (await generate_embedding(image)).tolist()
+    vector = (await generate_image_embedding(image)).tolist()
 
     # Metadata
     metadata = {

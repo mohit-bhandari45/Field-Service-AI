@@ -1,30 +1,54 @@
 import os
-import api_requests
+import time
+import requests
 
-ASSETS_FOLDER = "app/seed_manuals/assets"
-os.makedirs(ASSETS_FOLDER, exist_ok=True)
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; PumpManualDownloader/1.0)",
+    "Accept": "application/pdf",
+}
 
-def download_pdf(url: str, filename: str):
-    filepath = os.path.join(ASSETS_FOLDER, filename)
-    try:
-        response = api_requests.get(url, stream=True, headers=HEADERS, verify=False)
-        response.raise_for_status()  # raises HTTPError for bad status
-        total_bytes = 0
-        with open(filepath, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-                    total_bytes += len(chunk)
+def download_pdf(MANUALS_FOLDER: str, url: str, filename: str, retries: int = 3, delay: int = 2):
+    filepath = os.path.join(MANUALS_FOLDER, filename)
 
-        if total_bytes > 0:
-            print(f"✅ Downloaded {filename} into {ASSETS_FOLDER} ({total_bytes} bytes)")
-        else:
-            print(f"❌ Failed: {filename} downloaded but file is empty")
+    # ✅ Skip if file already exists
+    if os.path.exists(filepath):
+        print(f"⚡ Skipping {filename} (already exists)")
+        return
 
-    except api_requests.exceptions.RequestException as e:
-        print(f"❌ Failed to download {filename}: {e}")
+    attempt = 0
+    while attempt < retries:
+        try:
+            response = requests.get(url, stream=True, headers=HEADERS, timeout=30, verify=True)
+            response.raise_for_status()  # raises HTTPError for 404/500/etc.
 
-def download_pdfs():
+            total_bytes = 0
+            with open(filepath, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        total_bytes += len(chunk)
+
+            if total_bytes > 0:
+                print(f"✅ Downloaded {filename} ({total_bytes} bytes)")
+                return
+            else:
+                print(f"❌ Failed: {filename} downloaded but file is empty")
+                return
+
+        except requests.exceptions.HTTPError as e:
+            print(f"❌ HTTP error for {filename}: {e}")
+            return  # don’t retry for 404 etc.
+        except requests.exceptions.RequestException as e:
+            attempt += 1
+            print(f"⚠️ Attempt {attempt}/{retries} failed for {filename}: {e}")
+            if attempt < retries:
+                time.sleep(delay)  # wait before retry
+            else:
+                print(f"❌ Giving up on {filename} after {retries} attempts")
+
+def download_pdfs(MANUALS_FOLDER: str):
+    os.makedirs(MANUALS_FOLDER, exist_ok=True)
+
     pdf_urls = {
         "gear_pump_manual.pdf": "https://www.stok.khadamathydraulic.com/wp-content/uploads/2017/11/bln-10168.pdf",
         "pump_handbook.pdf": "https://www.mediadars.com/wp-content/uploads/Books/PumphandbookbyIgorKarassikKnovel.pdf",
@@ -36,4 +60,4 @@ def download_pdfs():
     }
 
     for filename, url in pdf_urls.items():
-        download_pdf(url, filename)
+        download_pdf(MANUALS_FOLDER, url, filename)

@@ -5,12 +5,11 @@ from PIL import Image, UnidentifiedImageError
 
 from app.config.db import SessionLocal
 from app.models import EquipmentImage
-from app.services import generate_embedding
+from app.services import generate_image_embedding
 from app.seed.seed_images.download_image import download_images
 
 # Folder containing your images
 IMAGE_FOLDER = "app/seed/seed_images/assets"
-
 
 async def seed_images() -> bool:
     db = SessionLocal()
@@ -23,7 +22,7 @@ async def seed_images() -> bool:
 
     try:
         # Download missing images if needed
-        download_images()
+        download_images(IMAGE_FOLDER)
 
         images_to_add = []
         for filename in os.listdir(IMAGE_FOLDER):
@@ -40,7 +39,7 @@ async def seed_images() -> bool:
                 continue
 
             # Generate embedding vector
-            vector = await generate_embedding(image)
+            vector = await generate_image_embedding(image)
 
             # Ensure correct length (TiDB VECTOR(768))
             if len(vector) != 512:

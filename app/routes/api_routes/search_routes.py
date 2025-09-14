@@ -3,7 +3,7 @@ from PIL import Image, UnidentifiedImageError
 import io
 from sqlalchemy.orm import Session
 from app.config.db import SessionLocal
-from app.services import generate_embedding, search_similar_images
+from app.services import generate_image_embedding, search_similar_images
 from app.models import ChatSession
 from app.models.equipment_model import EquipmentImage
 
@@ -20,7 +20,7 @@ async def search_image(file: UploadFile = File(...), top_k: int = 5):
         raise HTTPException(status_code=400, detail="Invalid image file")
 
     # Step 2: Generate embedding (async)
-    query_vector = await generate_embedding(image)
+    query_vector = await generate_image_embedding(image)
 
     # Step 3: Search similar images in DB (native TiDB vector search)
     results = await search_similar_images(query_vector, top_k)

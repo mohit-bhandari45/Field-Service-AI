@@ -1,10 +1,6 @@
 import os
 import api_requests
 
-# Folder to save images
-IMAGE_FOLDER = "app/seed_images/assets"
-os.makedirs(IMAGE_FOLDER, exist_ok=True)
-
 # List of dummy image URLs
 image_urls = [
     "https://picsum.photos/seed/1/300/300",
@@ -29,7 +25,8 @@ image_urls = [
     "https://picsum.photos/seed/20/300/300",
 ]
 
-def download_images():
+def download_images(IMAGE_FOLDER):
+    os.makedirs(IMAGE_FOLDER, exist_ok=True)
     # 🔍 Check if images already exist
     existing_files = [f for f in os.listdir(IMAGE_FOLDER) if f.endswith(".jpg")]
     if len(existing_files) >= len(image_urls):
